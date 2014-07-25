@@ -1,7 +1,11 @@
 __author__ = 'escherba'
 
 import unittest
+<<<<<<< HEAD
 from lsh.unionfind import UnionFind
+=======
+from pymaptools import UnionFind
+>>>>>>> 6d6e0de21b2eee7c2c34d326ff063ec4bc36ad31
 
 
 class TestUnionFind(unittest.TestCase):

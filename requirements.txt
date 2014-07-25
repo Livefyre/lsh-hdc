@@ -1,2 +1,7 @@
+<<<<<<< HEAD
 -e git+https://github.com/escherba/cityhash.git#egg=cityhash
 -e git+https://github.com/escherba/pymaptools.git#egg=pymaptools
+=======
+git+https://github.com/escherba/cityhash.git#egg=cityhash
+git+https://github.com/escherba/pymaptools.git#egg=pymaptools
+>>>>>>> 6d6e0de21b2eee7c2c34d326ff063ec4bc36ad31

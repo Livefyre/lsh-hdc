@@ -6,12 +6,21 @@ PYTHON = $(PYENV) python
 package: env
 	$(PYTHON) setup.py bdist_egg
 	$(PYTHON) setup.py sdist
+<<<<<<< HEAD
 
 dev: env/bin/activate dev_requirements.txt
 	$(PYENV) pip install -e . -r dev_requirements.txt
 
 test: env
 	$(PYENV) nosetests $(NOSEARGS)
+=======
+
+test: env dev
+	$(PYENV) nosetests $(NOSEARGS)
+
+dev: env/bin/activate dev_requirements.txt
+	$(PYENV) pip install -e . -r dev_requirements.txt
+>>>>>>> 6d6e0de21b2eee7c2c34d326ff063ec4bc36ad31
 
 clean:
 	$(PYTHON) setup.py clean

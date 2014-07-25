@@ -1,5 +1,4 @@
-# -*- coding: utf-8 -*-
-__version__ = "0.0.18"
+__version__ = "0.0.19"
 
 
 """
@@ -16,11 +15,10 @@ import heapq
 from logging import getLogger
 from itertools import imap, izip, islice, chain, combinations
 from collections import defaultdict
-from cityhash import CityHash64, CityHash128
 from abc import abstractmethod
-from lsh.unionfind import UnionFind
+
+from cityhash import CityHash64, CityHash128
 from lsh.utils import totuple, tsorted
-from HTMLParser import HTMLParser
 
 
 LOG = getLogger(__name__)
@@ -113,6 +111,7 @@ def hamming_idist(s, t):
     :rtype: int
     """
 
+    # TODO: move this into utils
     d = len(s) - len(t)
     if d > 0:
         t += [0] * d
@@ -121,7 +120,7 @@ def hamming_idist(s, t):
     return sum(ch1 != ch2 for ch1, ch2 in izip(s, t))
 
 
-def hamming_ndist(a, b):
+def hamming(a, b):
     """Return the Hamming distance between bits of two numbers
 
     :param a: some number
@@ -131,6 +130,8 @@ def hamming_ndist(a, b):
     :returns: hamming distance between two numbers
     :rtype: int
     """
+
+    # TODO: move this into utils
     return bitlist(a ^ b).count(1)
 
 
@@ -348,51 +349,6 @@ class Shingler:
             return set(shingles)
         else:
             return list(shingles)
-
-
-class Tokenizer(object):
-    """Abstract tokenizer interface"""
-
-    @abstractmethod
-    def tokenize(self, text):
-        """Tokenize text"""
-
-
-class RegexTokenizer(Tokenizer):
-    def __init__(self, pattern=None):
-        if pattern is None:
-            """
-            pattern = ur'(?u)\w+'
-            pattern = ur'(?:\B[#@$£€¥₩฿])?(?u)\w+(?:[%\+]\B)?'
-            pattern = ur'''
-                        (?:                # Either URL
-                        http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+
-                        |                  # or
-                        (?:\B[#@$£€¥₩฿])?  # (preceded by optional pound-, at-, or currency signs)
-                        (?u)\w+            # a Unicode word
-                        (?:[%\+]\B)?       # optionally followed by percentage or plus signs
-                        )
-                        '''
-            """
-            pattern = ur'(?u)\w+'
-        self.r = re.compile(pattern, (re.VERBOSE | re.UNICODE))
-
-    def tokenize(self, text):
-        return self.r.findall(text)
-
-
-class Normalizer:
-    def __init__(self):
-        self.html_parser = HTMLParser()
-
-    def normalize(self, text):
-        """
-        :param text: Input text
-        :return: str, unicode
-        :return: normalized text
-        :rtype: str, unicode
-        """
-        return self.html_parser.unescape(text).lower()
 
 
 def jaccard_sim(x, y):
@@ -711,63 +667,3 @@ class LSHC:
         for prefix, selector in self.selectors:
             band = selector(list_sig)
             yield '{}:{}'.format(prefix, CityHash64("salt" + repr(band) + "tlas"))
-
-
-class Cluster:
-    """Clusters sets with Jaccard similarity above threshold with high
-    probability.
-
-    Algorithm based on Rajaraman, "Mining of Massive Datasets":
-    1. Generate set signature
-    2. Use LSH to map similar signatures to same buckets
-    3. Use UnionFind to merge buckets containing same values
-    """
-    def __init__(self, width=12, bandwidth=3, lsh_scheme="a0", universe_size=None, kmin=1):
-        """
-
-        :param width: Number of bands
-        :type width: int
-        :param lsh_scheme: Adjusts number of combinatorial bands
-        :type lsh_scheme: str
-        :param bandwidth: Number of rows per band
-        :type bandwidth: int
-        :param universe_size: A prime number of size close to token universe cardinality
-        :type universe_size: long
-        """
-        self.union_find = UnionFind()
-        self.signer = MinHashSignature(width,
-                                       lsh_hasher=LSHC(bandwidth, width=width, scheme=lsh_scheme),
-                                       universe_size=universe_size,
-                                       kmin=kmin)
-        self.hash_map = defaultdict(list)
-
-    def add_set(self, s, label=None):
-        # Set default label for this set
-        if not label:
-            label = s
-
-        # Add to union-find structure
-        uf_ = self.union_find
-        uf_.__getitem__(label)
-
-        # Get signature vector and hash it
-        hashed_signature = self.signer.get_signature(s)
-        label_gen = imap(self.hash_map.__getitem__, hashed_signature)
-
-        # Unite labels with same LSH keys
-        for label_list in label_gen:
-            if label_list:
-                first_label = label_list[0]
-                if label != first_label:
-                    label_list.append(label)
-                    uf_.union(first_label, label)
-            else:
-                label_list.append(label)
-
-    def get_clusters(self):
-        """
-
-        :return: a list of sets representing clusters
-        :rtype: list
-        """
-        return self.union_find.sets()
